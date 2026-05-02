@@ -20,27 +20,28 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v4.0.1
+        uses: android-actions/setup-android@v4
 
-      - name: Install Android NDK
+      - name: Verify Android dependencies
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager --install "platform-tools" "ndk;26.3.11579264" "cmake;3.22.1"
+          test -f dependencies/android/libogg/include/ogg/ogg.h
+          test -f dependencies/android/libtheora/include/theora/theoradec.h
+          test -e android/app/jni/Game
 
       - name: Build Android
+        working-directory: android
         run: |
-          make -j"$(nproc)" RSDK_ONLY=1 PLATFORM=Android AUTOBUILD=1
+          ./gradlew assembleDebug
 
-      - name: Show build outputs
+      - name: Show outputs
         run: |
-          find . -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.so" -o -name "*.zip" \) | sort
+          find android/app/build/outputs -type f | sort
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: |
-            bin/Android/**
-            **/*.apk
-            **/*.aab
+            android/app/build/outputs/**/*.apk
+            android/app/build/outputs/**/*.aab
           if-no-files-found: error
