@@ -1,6 +1,7 @@
 name: Build RSDKv5
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
 
 jobs:
   android:
@@ -12,23 +13,34 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4.0.1
+
+      - name: Install Android NDK
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager --install "platform-tools" "ndk;26.3.11579264" "cmake;3.22.1"
 
       - name: Build Android
         run: |
-          # Replace this with your repo's Android build command
-          # Example:
-          # ./gradlew assembleDebug
-          echo "Run your Android build here"
+          make -j"$(nproc)" RSDK_ONLY=1 PLATFORM=Android AUTOBUILD=1
+
+      - name: Show build outputs
+        run: |
+          find . -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.so" -o -name "*.zip" \) | sort
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: |
-            app/build/outputs/**
-            build/outputs/**
+            bin/Android/**
+            **/*.apk
+            **/*.aab
+          if-no-files-found: error
